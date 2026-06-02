@@ -254,11 +254,11 @@
   <div style="background:var(--paper);border-radius:18px;padding:20px;max-width:480px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow)">
     <h3 id="pmTitle" style="color:var(--accent);font-size:19px;margin-bottom:12px"></h3>
     <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Словацькою</label>
-    <input id="pm-sk" placeholder="напр. Dobrý deň" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
+    <input id="pm-sk" lang="sk" autocapitalize="none" placeholder="напр. Dobrý deň" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
     <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Українською</label>
-    <input id="pm-ua" placeholder="напр. Добрий день" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
+    <input id="pm-ua" lang="uk" placeholder="напр. Добрий день" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
     <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Підказка (необов'язково)</label>
-    <input id="pm-note" placeholder="напр. універсальне вітання" style="width:100%;padding:11px;font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;margin-bottom:16px">
+    <input id="pm-note" lang="uk" placeholder="напр. універсальне вітання" style="width:100%;padding:11px;font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;margin-bottom:16px">
     <div style="display:flex;gap:8px">
       <button id="pmSave" style="flex:1;padding:13px;border:none;border-radius:12px;background:var(--accent2);color:#fff;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer">Зберегти</button>
       <button id="pmCancel" style="padding:13px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:600;cursor:pointer">Скасувати</button>
@@ -957,7 +957,7 @@ function renderExercise(){
     body=`<div class="gcard">${big}</div><div class="gopts">${ex.options.map((o,i)=>`<button class="gopt${ex.optLang==='sk'?' sk':''}" data-i="${i}"${ex.optLang==='sk'?` data-sk="${gAttr(o)}"`:''}>${o}</button>`).join('')}</div>`;
   } else if(ex.t==='type'){
     const top=ex.prompt==='🔊'?'<button class="gaudio" id="g-audio">🔊 Прослухати</button>':`<div class="gprompt${ex.promptLang==='sk'?' sk':''}"${ex.promptLang==='sk'?` data-sk="${gAttr(ex.audio||ex.prompt)}"`:''}>${ex.prompt}</div>${ex.audio?'<button class="gaudio small" id="g-audio">🔊 Прослухати</button>':''}`;
-    body=`<div class="gcard">${top}</div><input id="g-input" class="ginput" placeholder="Твоя відповідь" autocomplete="off"><button class="gcheck" id="g-check">Перевірити</button>`;
+    body=`<div class="gcard">${top}</div><input id="g-input" class="ginput" lang="${ex.promptLang==='sk'?'uk':'sk'}" autocapitalize="none" placeholder="Твоя відповідь" autocomplete="off"><button class="gcheck" id="g-check">Перевірити</button>`;
   } else if(ex.t==='truefalse'){
     body=`<div class="gcard"><div class="gprompt sk" data-sk="${gAttr(ex.sk)}">${ex.sk}</div><div class="gprompt">${ex.ua}</div><button class="gaudio small" id="g-audio">🔊 Прослухати</button></div><div class="gtf"><button class="gopt" data-v="1">✓ Правда</button><button class="gopt" data-v="0">✗ Хибно</button></div>`;
   } else if(ex.t==='build'){
@@ -1131,6 +1131,7 @@ function renderExercises(){
     var auto=(e.kind==='translate-sk-ua'||e.kind==='translate-ua-sk'||e.kind==='order');
     var hasInput=auto||e.kind==='fill'||e.kind==='test';
     var promptSk=(e.kind!=='translate-ua-sk'&&e.kind!=='test');
+    var inLang=(e.kind==='translate-sk-ua')?'uk':'sk';   // мова очікуваної відповіді (для клавіатури телефона)
     html+='<div class="excard" data-ex="'+ei+'">';
     html+='<div class="exhead"><span class="exn">'+(e.n===99?'★':e.n)+'</span><b>'+gEsc(e.title||KIND[e.kind]||'')+'</b></div>';
     if(e.task)html+='<div class="extask">'+gEsc(e.task)+'</div>';
@@ -1139,7 +1140,7 @@ function renderExercises(){
       e.items.forEach(function(it,ii){
         var dataSk=promptSk?(' data-sk="'+gAttr(it)+'"'):'';
         html+='<div class="exitem" data-i="'+ii+'"><div class="exprompt'+(promptSk?' sk':'')+'"'+dataSk+'>'+(ii+1)+'. '+gEsc(it)+'</div>'
-          +(hasInput?'<input class="exinp" data-i="'+ii+'" placeholder="твоя відповідь" autocomplete="off">':'')
+          +(hasInput?'<input class="exinp" data-i="'+ii+'" lang="'+inLang+'" autocapitalize="none" placeholder="твоя відповідь" autocomplete="off">':'')
           +'<div class="exfb" data-i="'+ii+'"></div></div>';
       });
       html+='</div>';
