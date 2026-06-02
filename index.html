@@ -207,6 +207,15 @@
   .exscore{margin-top:8px;font-size:14px;font-weight:700;color:var(--ink)}
   .exhint{margin-top:12px;font-size:13px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.45}
   .exopen{font-size:14px;color:var(--ink);background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px}
+  /* === бренд Langua + вибір мови навчання === */
+  header h1.brand{font-size:22px;letter-spacing:.3px;font-weight:800;color:var(--accent2)}
+  #levels{flex-direction:column;align-items:center;gap:9px}
+  .langsel{font-family:inherit;font-size:15px;font-weight:700;color:var(--ink);background:var(--paper);
+    border:1px solid var(--line);border-radius:12px;padding:8px 34px 8px 13px;cursor:pointer;box-shadow:var(--shadow);
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%238a8475' stroke-width='1.6'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center}
+  .lvchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 </style>
 </head>
 <body>
@@ -284,6 +293,7 @@
 </div>
 <script>
 window.__APPS=[{c:"sk-a1",name:"🇸🇰 A1"},{c:"sk-a2",name:"🇸🇰 A2"},{c:"sk-b1",name:"🇸🇰 B1"},{c:"sk-b2",name:"🇸🇰 B2"},{c:"it-a1",name:"🇮🇹 A1"},{c:"it-a2",name:"🇮🇹 A2"},{c:"it-b1",name:"🇮🇹 B1"},{c:"it-b2",name:"🇮🇹 B2"}];
+window.__LANGS=[{code:"sk",name:"Словацька",flag:"🇸🇰"},{code:"it",name:"Італійська",flag:"🇮🇹"}];
 window.registerContent=function(o){window.__CONTENT=o;};
 (function(){try{var p=new URLSearchParams(location.search);var c=(p.get("c")||"sk-a1").replace(/[^a-z0-9-]/gi,"");if(!(window.__APPS||[]).some(function(a){return a.c===c;}))c="sk-a1";document.write('<scr'+'ipt src="content/'+c+'.js"><\/scr'+'ipt>');}catch(e){}})();
 </script>
@@ -315,9 +325,22 @@ let TTS="sk-SK", NATIVE="uk", NATIVE_TTS="uk-UA", TARGET_NAME="Словацьк�
     DATA.texts.push({l:t.l,title:t.title,sub:t.sub||"",track:t.track||"",kind:t.kind||"",lines:(t.lines||[]).map(function(ln){return {s:ln.s||"",sk:ln.t,ua:tx(ln,"tr")};})});
   });
   try{
+    var cur=(new URLSearchParams(location.search)).get("c")||"sk-a1";
+    var curLang=cur.split("-")[0];
+    var apps=window.__APPS||[]; var langs=window.__LANGS||[];
+    var h1=document.querySelector("header h1"); if(h1){h1.textContent="Langua"; h1.className="brand";}
     var lv=document.getElementById("levels");
-    if(lv){ var cur=(new URLSearchParams(location.search)).get("c")||"sk-a1"; lv.innerHTML="";
-      (window.__APPS||[]).forEach(function(a){ var el=document.createElement("a"); el.className="level"+(a.c===cur?" active":""); el.href="?c="+a.c; el.textContent=a.name; lv.appendChild(el); }); }
+    if(lv){ lv.innerHTML="";
+      var sel=document.createElement("select"); sel.id="langsel"; sel.className="langsel"; sel.setAttribute("aria-label","Мова навчання");
+      langs.forEach(function(L){ if(!apps.some(function(a){return a.c.split("-")[0]===L.code;}))return;
+        var op=document.createElement("option"); op.value=L.code; op.textContent=(L.flag?L.flag+" ":"")+L.name; if(L.code===curLang)op.selected=true; sel.appendChild(op); });
+      sel.addEventListener("change",function(){ var f=apps.filter(function(a){return a.c.split("-")[0]===sel.value;})[0]; if(f)location.search="?c="+f.c; });
+      lv.appendChild(sel);
+      var chips=document.createElement("div"); chips.className="lvchips";
+      apps.filter(function(a){return a.c.split("-")[0]===curLang;}).forEach(function(a){
+        var el=document.createElement("a"); el.className="level"+(a.c===cur?" active":""); el.href="?c="+a.c; el.textContent=(a.c.split("-")[1]||"").toUpperCase(); chips.appendChild(el); });
+      lv.appendChild(chips);
+    }
     document.title="Langua · "+LEVEL_LABEL;
     var hp=document.querySelector("header p"); if(hp)hp.textContent=TARGET_NAME+" через українську · рівень "+LEVEL_LABEL;
   }catch(e){}
