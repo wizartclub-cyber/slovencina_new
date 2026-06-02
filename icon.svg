@@ -6,16 +6,16 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- кремова рамка-картка, натяк на флешкартку -->
+  <!-- кремова рамка-картка -->
   <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#f4f1ea" stroke-opacity="0.22" stroke-width="6"/>
-  <!-- велике серифне SK -->
-  <text x="256" y="312" text-anchor="middle"
+  <!-- велике серифне «la» (Langua) -->
+  <text x="256" y="300" text-anchor="middle"
         font-family="Iowan Old Style, Palatino, Georgia, 'Times New Roman', serif"
-        font-size="248" font-weight="700" fill="#fffdf7" letter-spacing="-6">SK</text>
+        font-size="232" font-weight="700" fill="#fffdf7" letter-spacing="-4">la</text>
   <!-- золота риска -->
-  <rect x="176" y="350" width="160" height="14" rx="7" fill="#d8a24a"/>
-  <!-- маленький підпис: рідна → ціль -->
-  <text x="256" y="424" text-anchor="middle"
+  <rect x="166" y="338" width="180" height="14" rx="7" fill="#d8a24a"/>
+  <!-- підпис бренду -->
+  <text x="256" y="414" text-anchor="middle"
         font-family="Iowan Old Style, Palatino, Georgia, serif"
-        font-size="44" font-weight="600" fill="#f4f1ea" fill-opacity="0.92">укр → svk</text>
+        font-size="50" font-weight="600" fill="#f4f1ea" fill-opacity="0.95" letter-spacing="6">LANGUA</text>
 </svg>

@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Словацька">
+<meta name="apple-mobile-web-app-title" content="Langua">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -30,7 +30,7 @@
   header h1{font-size:28px; letter-spacing:-.5px; font-weight:800; color:var(--accent)}
   header h1 span{color:var(--accent2)}
   header p{color:var(--muted); font-size:12px; margin-top:2px; font-style:italic}
-  .levels{display:flex; gap:6px; justify-content:center; margin:10px 0 2px}
+  .levels{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0 2px}
   .level{flex:0 0 auto; min-width:50px; text-align:center; text-decoration:none; padding:6px 14px;
     border:1px solid var(--line); background:var(--paper); border-radius:20px; font-family:inherit;
     font-weight:800; font-size:14px; color:var(--muted); box-shadow:var(--shadow); transition:.15s}
@@ -253,7 +253,7 @@
 <div id="pmodal" style="display:none;position:fixed;inset:0;background:rgba(28,26,23,.6);z-index:21;align-items:center;justify-content:center;padding:18px">
   <div style="background:var(--paper);border-radius:18px;padding:20px;max-width:480px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow)">
     <h3 id="pmTitle" style="color:var(--accent);font-size:19px;margin-bottom:12px"></h3>
-    <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Словацькою</label>
+    <label id="pm-sk-label" style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Словацькою</label>
     <input id="pm-sk" lang="sk" autocapitalize="none" placeholder="напр. Dobrý deň" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
     <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Українською</label>
     <input id="pm-ua" lang="uk" placeholder="напр. Добрий день" style="width:100%;padding:11px;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">
@@ -283,7 +283,7 @@
   </div>
 </div>
 <script>
-window.__APPS=[{c:"sk-a1",name:"Словацька · A1"},{c:"sk-a2",name:"Словацька · A2"},{c:"sk-b1",name:"Словацька · B1"},{c:"sk-b2",name:"Словацька · B2"}];
+window.__APPS=[{c:"sk-a1",name:"🇸🇰 A1"},{c:"sk-a2",name:"🇸🇰 A2"},{c:"sk-b1",name:"🇸🇰 B1"},{c:"sk-b2",name:"🇸🇰 B2"},{c:"it-a1",name:"🇮🇹 A1"},{c:"it-a2",name:"🇮🇹 A2"},{c:"it-b1",name:"🇮🇹 B1"},{c:"it-b2",name:"🇮🇹 B2"}];
 window.registerContent=function(o){window.__CONTENT=o;};
 (function(){try{var p=new URLSearchParams(location.search);var c=(p.get("c")||"sk-a1").replace(/[^a-z0-9-]/gi,"");if(!(window.__APPS||[]).some(function(a){return a.c===c;}))c="sk-a1";document.write('<scr'+'ipt src="content/'+c+'.js"><\/scr'+'ipt>');}catch(e){}})();
 </script>
@@ -641,11 +641,17 @@ function renderMyPhrases(){
   study.querySelectorAll('.my-edit').forEach(b=>b.addEventListener('click',()=>openPhraseEditor(b.dataset.id)));
   study.querySelectorAll('.my-del').forEach(b=>b.addEventListener('click',()=>deletePhrase(b.dataset.id)));
 }
+// мова цілі / рідна — для атрибута lang полів вводу (клавіатура телефона).
+// в окремих файлах TTS/NATIVE не визначені → словацька/українська за замовчуванням.
+function tgtLang(){ try{ return (typeof TTS!=='undefined'&&TTS)?String(TTS).split('-')[0]:'sk'; }catch(e){ return 'sk'; } }
+function natLang(){ try{ return (typeof NATIVE!=='undefined'&&NATIVE)?NATIVE:'uk'; }catch(e){ return 'uk'; } }
 let editingId=null;
 function openPhraseEditor(id){
   editingId=(id==null?null:id);
   const p=editingId!=null?myStore.phrases.find(x=>x.id==editingId):null;
   document.getElementById('pmTitle').textContent=p?"Редагувати фразу":"Нова фраза";
+  const skF=document.getElementById('pm-sk'); if(skF)skF.lang=tgtLang();   // клавіатура під цільову мову
+  const skL=document.getElementById('pm-sk-label'); if(skL&&typeof TARGET_NAME!=='undefined'&&TARGET_NAME)skL.textContent=TARGET_NAME;
   document.getElementById('pm-sk').value=p?p.sk:"";
   document.getElementById('pm-ua').value=p?p.ua:"";
   document.getElementById('pm-note').value=p?(p.note||""):"";
@@ -957,7 +963,7 @@ function renderExercise(){
     body=`<div class="gcard">${big}</div><div class="gopts">${ex.options.map((o,i)=>`<button class="gopt${ex.optLang==='sk'?' sk':''}" data-i="${i}"${ex.optLang==='sk'?` data-sk="${gAttr(o)}"`:''}>${o}</button>`).join('')}</div>`;
   } else if(ex.t==='type'){
     const top=ex.prompt==='🔊'?'<button class="gaudio" id="g-audio">🔊 Прослухати</button>':`<div class="gprompt${ex.promptLang==='sk'?' sk':''}"${ex.promptLang==='sk'?` data-sk="${gAttr(ex.audio||ex.prompt)}"`:''}>${ex.prompt}</div>${ex.audio?'<button class="gaudio small" id="g-audio">🔊 Прослухати</button>':''}`;
-    body=`<div class="gcard">${top}</div><input id="g-input" class="ginput" lang="${ex.promptLang==='sk'?'uk':'sk'}" autocapitalize="none" placeholder="Твоя відповідь" autocomplete="off"><button class="gcheck" id="g-check">Перевірити</button>`;
+    body=`<div class="gcard">${top}</div><input id="g-input" class="ginput" lang="${ex.promptLang==='sk'?natLang():tgtLang()}" autocapitalize="none" placeholder="Твоя відповідь" autocomplete="off"><button class="gcheck" id="g-check">Перевірити</button>`;
   } else if(ex.t==='truefalse'){
     body=`<div class="gcard"><div class="gprompt sk" data-sk="${gAttr(ex.sk)}">${ex.sk}</div><div class="gprompt">${ex.ua}</div><button class="gaudio small" id="g-audio">🔊 Прослухати</button></div><div class="gtf"><button class="gopt" data-v="1">✓ Правда</button><button class="gopt" data-v="0">✗ Хибно</button></div>`;
   } else if(ex.t==='build'){
@@ -1131,7 +1137,7 @@ function renderExercises(){
     var auto=(e.kind==='translate-sk-ua'||e.kind==='translate-ua-sk'||e.kind==='order');
     var hasInput=auto||e.kind==='fill'||e.kind==='test';
     var promptSk=(e.kind!=='translate-ua-sk'&&e.kind!=='test');
-    var inLang=(e.kind==='translate-sk-ua')?'uk':'sk';   // мова очікуваної відповіді (для клавіатури телефона)
+    var inLang=(e.kind==='translate-sk-ua')?natLang():tgtLang();   // мова очікуваної відповіді (для клавіатури телефона)
     html+='<div class="excard" data-ex="'+ei+'">';
     html+='<div class="exhead"><span class="exn">'+(e.n===99?'★':e.n)+'</span><b>'+gEsc(e.title||KIND[e.kind]||'')+'</b></div>';
     if(e.task)html+='<div class="extask">'+gEsc(e.task)+'</div>';
