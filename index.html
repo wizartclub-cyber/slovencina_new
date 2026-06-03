@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="firebase-config.js"></script>
 <title>Slovenčina · A1</title>
 <style>
   :root{
@@ -243,6 +244,7 @@
   <div id="study"></div>
 </div>
 <div class="data">
+  <button id="help">❓ Довідка</button>
   <button id="settings">⚙ Повторення</button>
   <button id="export">📤 Перенести</button>
   <button id="import">📥 Отримати</button>
@@ -260,6 +262,32 @@
       <button id="modalAction2" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;display:none"></button>
       <button id="modalAction3" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;display:none"></button>
       <button id="modalClose" style="padding:11px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:600;cursor:pointer">Закрити</button>
+    </div>
+  </div>
+</div>
+<div id="hmodal" style="display:none;position:fixed;inset:0;background:rgba(28,26,23,.6);z-index:22;align-items:center;justify-content:center;padding:18px">
+  <div style="background:var(--paper);border-radius:18px;padding:20px 20px 8px;max-width:540px;width:100%;max-height:86vh;overflow:auto;box-shadow:var(--shadow);line-height:1.55">
+    <h3 style="color:var(--accent);font-size:20px;margin-bottom:10px">❓ Як користуватись</h3>
+    <div style="font-size:14.5px;color:var(--ink)">
+      <p style="margin-bottom:10px"><b>Що це.</b> Застосунок учить мову через українську за <b>картками з інтервальним повторенням</b>: складніші слова показуються частіше, легші — рідше. Достатньо займатися щодня потроху.</p>
+      <p style="margin-bottom:6px"><b>Вкладки вгорі:</b></p>
+      <ul style="margin:0 0 10px 18px;padding:0">
+        <li><b>Слова / Фрази / Граматика</b> — картки для вивчення.</li>
+        <li><b>Тексти</b> — діалоги й читанки (режим читання, без карток).</li>
+        <li><b>📝 Вправи</b> — завдання з підручника (у новій версії).</li>
+        <li><b>Мої фрази</b> — додавай свої слова й фрази.</li>
+        <li><b>★ Обране</b> — окремий список того, що позначив зірочкою.</li>
+        <li><b>🎮 Гра</b> — уроки в стилі Duolingo: XP, корони 👑, денна серія 🔥.</li>
+      </ul>
+      <p style="margin-bottom:10px"><b>Картка.</b> Гортай ←/→ (або свайп). <b>🔊</b> — озвучити, <b>▶ Авто</b> — програти й перейти далі. Після показу перекладу постав оцінку: <b>Важко / Норм / Легко</b> — від неї залежить, коли картка повториться. <b>✓ Знаю</b> — прибрати з повторення, <b>★</b> — додати в обране.</p>
+      <p style="margin-bottom:10px"><b>🔊 Озвучка.</b> Якщо переклад українською мовчить — додай український голос: <i>Налаштування → Універсальний доступ → Усне мовлення → Голоси → Українська</i> (на iPhone). Голос мови, яку вчиш, зазвичай уже є.</p>
+      <p style="margin-bottom:10px"><b>📲 Перенести на інший пристрій.</b> Натисни <b>📤 Перенести</b> → на іншому пристрої наведи камеру на <b>QR</b> (або надішли <b>посилання</b>/<b>файл</b> через AirDrop) → підтверди. Прогрес <b>об'єднається</b>, нічого не зникне. Кнопка <b>📥 Отримати</b> — вставити перенесене вручну.</p>
+      <p style="margin-bottom:10px" id="help-cloud" hidden><b>☁ Синхронізація (Google).</b> Натисни <b>☁ Увійти</b> й увійди через Google — і прогрес сам синхронізується між усіма твоїми пристроями. На кожному пристрої входь тим самим акаунтом.</p>
+      <p style="margin-bottom:10px"><b>Збереження.</b> Прогрес зберігається <b>автоматично</b> в цьому браузері після кожної відповіді — нічого натискати не треба. У кожного на своєму пристрої свій прогрес.</p>
+      <p style="margin-bottom:10px"><b>На екран «Додому».</b> У Safari: кнопка <b>Поділитися</b> → <b>На екран «Додому»</b> — застосунок відкриватиметься в один тап, як окрема програма.</p>
+    </div>
+    <div style="position:sticky;bottom:0;background:var(--paper);padding:10px 0">
+      <button id="hmodalClose" style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--accent2);color:#fff;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer">Зрозуміло</button>
     </div>
   </div>
 </div>
@@ -869,6 +897,49 @@ document.getElementById('import').onclick=()=>{
   setTimeout(async ()=>{try{const obj=await unpackData(d);if(obj&&confirm("Перенести збережений прогрес на цей пристрій? Він об'єднається з наявним."))applyTransfer(obj)&&toast("Готово — прогрес перенесено");}catch(e){toast("Посилання переносу пошкоджене");}
     try{sp.delete('d');history.replaceState(null,'',location.pathname+(sp.toString()?'?'+sp.toString():'')+location.hash);}catch(e){}},500);
 }catch(e){}})();
+
+// ============ ХМАРНА СИНХРОНІЗАЦІЯ (Google) — активна ЛИШЕ якщо заданий firebase-config ============
+(function(){
+  var CFG=window.__FBCONFIG;
+  if(!CFG||!CFG.apiKey)return;                 // конфіг не заданий → жодних змін, працює як завжди
+  function isCloudKey(k){return /_(progress|favorites|game)$/.test(k)||k===MY_KEY||k===SETTINGS_KEY;}
+  function collectStore(){var s={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isCloudKey(k)){try{s[k]=JSON.parse(localStorage.getItem(k));}catch(e){}}}return s;}
+  function mProgress(key,inc){if(!inc||!inc.cards)return;var s;try{s=JSON.parse(localStorage.getItem(key))||{cards:{}};}catch(e){s={cards:{}};}if(!s.cards)s.cards={};var c=inc.cards;for(var k in c){var ic=c[k],lc=s.cards[k];if(!lc){s.cards[k]=ic;continue;}if((ic.reps||0)>(lc.reps||0)||((ic.reps||0)===(lc.reps||0)&&(ic.due||0)>(lc.due||0))){lc.reps=ic.reps;lc.interval=ic.interval;lc.ease=ic.ease;lc.due=ic.due;}if(ic.learned)lc.learned=true;if(ic.known)lc.known=true;}try{localStorage.setItem(key,JSON.stringify(s));}catch(e){}}
+  function mFav(key,arr){if(!Array.isArray(arr))return;var cur=[];try{cur=JSON.parse(localStorage.getItem(key))||[];}catch(e){}var set=new Set(cur);arr.forEach(function(x){set.add(x);});try{localStorage.setItem(key,JSON.stringify(Array.from(set)));}catch(e){}}
+  function mGame(key,g){if(!g)return;var cur={};try{cur=JSON.parse(localStorage.getItem(key))||{};}catch(e){}var mg={xp:Math.max(+cur.xp||0,+g.xp||0),streak:Math.max(+cur.streak||0,+g.streak||0),lastDay:((g.lastDay||"")>(cur.lastDay||"")?g.lastDay:cur.lastDay)||"",lessons:Object.assign({},cur.lessons||{}),dayXp:+cur.dayXp||0,dayXpDate:cur.dayXpDate||"",goalDate:cur.goalDate||""};var gl=g.lessons||{};for(var lk in gl)mg.lessons[lk]=Math.max(+mg.lessons[lk]||0,+gl[lk]||0);try{localStorage.setItem(key,JSON.stringify(mg));}catch(e){}}
+  function mMy(v){if(!v||!v.phrases)return;var m=loadMy();var seen=new Set((m.phrases||[]).map(function(p){return p.id;}));v.phrases.forEach(function(p){if(!seen.has(p.id)){m.phrases.push(p);seen.add(p.id);}});writeMy(m);}
+  function mergeStore(store){if(!store)return;for(var key in store){var v=store[key];if(/_progress$/.test(key))mProgress(key,v);else if(/_favorites$/.test(key))mFav(key,v);else if(/_game$/.test(key))mGame(key,v);else if(key===MY_KEY)mMy(v);else if(key===SETTINGS_KEY){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(v));}catch(e){}}}
+    settings=loadSettings();favs=loadFavs();gameStore=loadGame();myStore=loadMy();state=load();ensureMyCards();resetBrowse();updateStats();buildLessons();pickNext();}
+  var bar=document.querySelector('.data');var btn=document.createElement('button');btn.id='cloudBtn';btn.textContent='☁ …';if(bar)bar.appendChild(btn);
+  function loadFB(){return new Promise(function(res,rej){if(window.firebase&&window.firebase.firestore)return res();var base='https://www.gstatic.com/firebasejs/10.12.5/';var libs=['firebase-app-compat.js','firebase-auth-compat.js','firebase-firestore-compat.js'];var i=0;(function nx(){if(i>=libs.length)return res();var s=document.createElement('script');s.src=base+libs[i++];s.onload=nx;s.onerror=rej;document.head.appendChild(s);})();});}
+  loadFB().then(function(){
+    firebase.initializeApp(CFG);var auth=firebase.auth(),db=firebase.firestore();
+    var docRef=null,pushT=null,applying=false,hooked=false,subbed=false;
+    try{auth.getRedirectResult().catch(function(){});}catch(e){}
+    function push(){if(!docRef)return;try{docRef.set({store:collectStore(),ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(function(){});}catch(e){}}
+    function schedule(){if(pushT)clearTimeout(pushT);pushT=setTimeout(push,2500);}
+    function hook(){if(hooked)return;hooked=true;var o=localStorage.setItem.bind(localStorage);localStorage.setItem=function(k,v){o(k,v);if(!applying&&docRef&&isCloudKey(k))schedule();};}
+    function sub(){if(subbed||!docRef)return;subbed=true;docRef.onSnapshot(function(snap){if(snap.metadata.hasPendingWrites)return;applying=true;try{var d=snap.data();if(d&&d.store)mergeStore(d.store);}catch(e){}applying=false;});}
+    function pull(){if(!docRef)return;docRef.get().then(function(snap){applying=true;try{var d=snap.exists?snap.data():null;if(d&&d.store)mergeStore(d.store);}catch(e){}applying=false;push();sub();toast('☁ Синхронізовано');}).catch(function(){toast('Не вдалося синхронізувати');});}
+    auth.onAuthStateChanged(function(user){
+      if(user){docRef=db.collection('users').doc(user.uid);var nm=(user.displayName||'').split(' ')[0]||'синхр.';btn.textContent='☁ '+nm;hook();pull();}
+      else{docRef=null;subbed=false;btn.textContent='☁ Увійти';}
+    });
+    btn.onclick=function(){
+      if(auth.currentUser){if(confirm('Вийти із синхронізації? Прогрес лишиться на цьому пристрої.'))auth.signOut();}
+      else{toast('Відкриваю вхід Google…');try{auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());}catch(e){toast('Не вдалося відкрити вхід');}}
+    };
+    window.addEventListener('pagehide',push);
+    window.__cloudPush=push;
+  }).catch(function(){btn.textContent='☁ (нема мережі)';});
+})();
+// ❓ Довідка користувача
+(function(){
+  var hb=document.getElementById('help'),hm=document.getElementById('hmodal'),hc=document.getElementById('hmodalClose');
+  if(hb&&hm)hb.addEventListener('click',function(){var cl=document.getElementById('help-cloud');if(cl)cl.hidden=!(window.__FBCONFIG&&window.__FBCONFIG.apiKey);hm.style.display='flex';});
+  if(hc&&hm)hc.addEventListener('click',function(){hm.style.display='none';});
+  if(hm)hm.addEventListener('click',function(e){if(e.target===hm)hm.style.display='none';});
+})();
 // кнопки модалки-редактора «Моєї фрази»
 (function(){
   var s=document.getElementById('pmSave'), c=document.getElementById('pmCancel');
