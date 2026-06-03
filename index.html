@@ -244,18 +244,22 @@
 </div>
 <div class="data">
   <button id="settings">⚙ Повторення</button>
-  <button id="export">💾 Зберегти</button>
-  <button id="import">↻ Завантажити</button>
+  <button id="export">📤 Перенести</button>
+  <button id="import">📥 Отримати</button>
 </div>
 <div class="toast" id="toast"></div>
 <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(28,26,23,.6);z-index:20;align-items:center;justify-content:center;padding:18px">
   <div style="background:var(--paper);border-radius:18px;padding:20px;max-width:520px;width:100%;max-height:80vh;overflow:auto;box-shadow:var(--shadow)">
     <h3 id="modalTitle" style="color:var(--accent);font-size:19px;margin-bottom:8px"></h3>
     <p id="modalHint" style="color:var(--muted);font-size:13px;margin-bottom:12px;line-height:1.5"></p>
-    <textarea id="modalText" style="width:100%;height:160px;font-family:monospace;font-size:11px;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical"></textarea>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button id="modalAction" style="flex:1;padding:13px;border:none;border-radius:12px;background:var(--accent2);color:#fff;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer"></button>
-      <button id="modalClose" style="padding:13px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:600;cursor:pointer">Закрити</button>
+    <div id="modalQR" style="text-align:center;margin:2px 0 10px"></div>
+    <textarea id="modalText" style="width:100%;height:110px;font-family:monospace;font-size:11px;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical"></textarea>
+    <input type="file" id="modalFile" accept=".json,.txt,application/json,text/plain" style="display:none">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+      <button id="modalAction" style="flex:1 1 100%;padding:13px;border:none;border-radius:12px;background:var(--accent2);color:#fff;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer"></button>
+      <button id="modalAction2" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;display:none"></button>
+      <button id="modalAction3" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;display:none"></button>
+      <button id="modalClose" style="padding:11px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-family:inherit;font-weight:600;cursor:pointer">Закрити</button>
     </div>
   </div>
 </div>
@@ -762,48 +766,109 @@ const modal=document.getElementById('modal');
 const modalText=document.getElementById('modalText');
 document.getElementById('modalClose').onclick=()=>{modal.style.display="none";};
 
-document.getElementById('export').onclick=()=>{
-  const data=JSON.stringify({progress:state, myphrases:myStore, favorites:[...favs], settings:settings});
-  modalText.value=data;
-  document.getElementById('modalTitle').textContent="Зберегти прогрес";
-  document.getElementById('modalHint').textContent="Твій прогрес уже зберігається автоматично в цьому браузері — нічого робити не треба. Ця кнопка потрібна лише щоб ПЕРЕНЕСТИ прогрес на інший пристрій: скопіюй текст і встав його у вікні «Завантажити» на тому пристрої.";
-  const act=document.getElementById('modalAction');
-  act.textContent="📋 Скопіювати";
-  act.onclick=()=>{
-    modalText.select();
-    try{
-      if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(modalText.value).then(()=>toast("Скопійовано! Встав у Нотатки")).catch(()=>{document.execCommand('copy');toast("Скопійовано! Встав у Нотатки");});
-      } else { document.execCommand('copy'); toast("Скопійовано! Встав у Нотатки"); }
-    }catch(e){ toast("Виділи текст і скопіюй вручну"); }
-  };
+// ============ ПЕРЕНЕСЕННЯ ПРОГРЕСУ МІЖ ПРИСТРОЯМИ (посилання / QR / файл / текст) ============
+// Дані лишаються між вашими пристроями: QR/посилання будуються на пристрої, нікуди не відправляються.
+function copyToClip(t,msg){try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast(msg)).catch(()=>_fbCopy(t,msg));}else _fbCopy(t,msg);}catch(e){toast("Виділи й скопіюй вручну");}}
+function _fbCopy(t,msg){try{modalText.value=t;modalText.select();document.execCommand('copy');toast(msg);}catch(e){toast("Виділи й скопіюй вручну");}}
+function _b64uEnc(bytes){let b='';for(let i=0;i<bytes.length;i++)b+=String.fromCharCode(bytes[i]);return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function _b64uDec(s){s=(s||'').replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
+async function _gz(str){const data=new TextEncoder().encode(str);if(typeof CompressionStream==="undefined")return null;const cs=new CompressionStream('gzip');const w=cs.writable.getWriter();w.write(data);w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer());}
+async function _gunz(bytes){const ds=new DecompressionStream('gzip');const w=ds.writable.getWriter();w.write(bytes);w.close();return new TextDecoder().decode(await new Response(ds.readable).arrayBuffer());}
+async function packData(obj){const j=JSON.stringify(obj);const gz=await _gz(j);if(gz)return 'g'+_b64uEnc(gz);return 'p'+_b64uEnc(new TextEncoder().encode(j));}
+async function unpackData(str){str=(str||'').trim();const tag=str[0],bytes=_b64uDec(str.slice(1));if(tag==='g')return JSON.parse(await _gunz(bytes));return JSON.parse(new TextDecoder().decode(bytes));}
+// компактний пакунок: лише ЗАЧЕПЛЕНІ картки поточного рівня + обране/гра/фрази/налаштування
+function buildTransferObj(){
+  const t0=Date.now(),DAY=86400000;
+  const cards={};
+  for(const k in state.cards){const c=state.cards[k];if(!c)continue;
+    if((c.reps>0)||c.learned||c.known||(c.due>0))cards[k]=[c.reps||0,c.interval||0,Math.round((c.ease||2.4)*100),Math.round(((c.due||0)-t0)/DAY),(c.learned?1:0)|(c.known?2:0)];}
+  return {v:2,t0:t0,key:STORAGE_KEY,p:cards,fav:[...favs],game:gameStore,m:myStore,s:settings};
+}
+function transferURL(packed){let u=location.href.split('#')[0];u=u.replace(/([?&])d=[^&]*/,'$1').replace(/[?&]$/,'');const sep=u.indexOf('?')<0?'?':'&';return u+sep+'d='+packed;}
+function downloadTransfer(){try{const blob=new Blob([JSON.stringify(buildTransferObj())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=STORAGE_KEY.replace('_progress','')+'-progress.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast("Файл збережено — надішли через AirDrop");}catch(e){toast("Не вдалося зберегти файл");}}
+// ЗЛИТТЯ (не перезапис): по кожній картці береться більший прогрес; обране/фрази — об'єднання
+function applyTransfer(obj){
+  if(!obj)return false;
+  let cards=null,fav=null,game=null,my=null,st=null,srcKey=STORAGE_KEY;
+  if(obj.p){srcKey=obj.key||STORAGE_KEY;cards={};const t0=+obj.t0||Date.now(),DAY=86400000;
+    for(const k in obj.p){const a=obj.p[k];cards[k]=Array.isArray(a)?{reps:a[0]||0,interval:a[1]||0,ease:(a[2]||240)/100,due:Math.round(t0+(a[3]||0)*DAY),learned:!!((a[4]||0)&1),known:!!((a[4]||0)&2)}:{reps:a.reps||0,interval:a.interval||0,ease:a.ease||2.4,due:a.due||0,learned:!!a.learned,known:!!a.known};}
+    fav=obj.fav;game=obj.game;my=obj.m;st=obj.s;
+  } else if(obj.progress){srcKey=STORAGE_KEY;cards=(obj.progress.cards)||{};fav=obj.favorites;my=obj.myphrases;st=obj.settings;
+  } else return false;
+  // 1) картки → у сховище ВІДПОВІДНОГО рівня (srcKey), злиттям
+  let store;try{store=JSON.parse(localStorage.getItem(srcKey))||{cards:{}};}catch(e){store={cards:{}};}
+  if(!store.cards)store.cards={};
+  for(const k in cards){const inc=cards[k];const loc=store.cards[k];
+    if(!loc){store.cards[k]=Object.assign({deck:k.split('-')[0],i:+(k.split('-')[1]||0)},inc);continue;}
+    if((inc.reps||0)>(loc.reps||0)||((inc.reps||0)===(loc.reps||0)&&(inc.due||0)>(loc.due||0))){loc.reps=inc.reps;loc.interval=inc.interval;loc.ease=inc.ease;loc.due=inc.due;}
+    if(inc.learned)loc.learned=true;if(inc.known)loc.known=true;}
+  try{localStorage.setItem(srcKey,JSON.stringify(store));}catch(e){}
+  // 2) обране рівня (об'єднання)
+  if(fav){const fk=srcKey.replace('_progress','_favorites');let cur=[];try{cur=JSON.parse(localStorage.getItem(fk))||[];}catch(e){}const set=new Set(cur);fav.forEach(x=>set.add(x));try{localStorage.setItem(fk,JSON.stringify([...set]));}catch(e){}}
+  // 3) гра рівня (беремо максимум)
+  if(game){const gk=srcKey.replace('_progress','_game');let cur={};try{cur=JSON.parse(localStorage.getItem(gk))||{};}catch(e){}
+    const mg={xp:Math.max(+cur.xp||0,+game.xp||0),streak:Math.max(+cur.streak||0,+game.streak||0),lastDay:((game.lastDay||"")>(cur.lastDay||"")?game.lastDay:cur.lastDay)||"",lessons:Object.assign({},cur.lessons||{}),dayXp:+cur.dayXp||0,dayXpDate:cur.dayXpDate||"",goalDate:cur.goalDate||""};
+    const gl=game.lessons||{};for(const lk in gl)mg.lessons[lk]=Math.max(+mg.lessons[lk]||0,+gl[lk]||0);
+    try{localStorage.setItem(gk,JSON.stringify(mg));}catch(e){}}
+  // 4) Мої фрази (спільні, об'єднання за id)
+  if(my&&my.phrases){const m=loadMy();const seen=new Set((m.phrases||[]).map(p=>p.id));my.phrases.forEach(p=>{if(!seen.has(p.id)){m.phrases.push(p);seen.add(p.id);}});writeMy(m);}
+  // 5) налаштування (спільні)
+  if(st){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(Object.assign({},DEF_SETTINGS,st)));}catch(e){}}
+  // 6) оновити стан застосунку
+  settings=loadSettings();myStore=loadMy();
+  if(srcKey===STORAGE_KEY){favs=loadFavs();gameStore=loadGame();state=load();ensureMyCards();resetBrowse();updateStats();buildLessons();pickNext();}
+  else{ensureMyCards();}
+  return true;
+}
+async function importFromText(text){
+  text=(text||'').trim();if(!text){toast("Порожньо");return;}
+  let obj=null;
+  if(/^[gp][A-Za-z0-9_-]+$/.test(text)){try{obj=await unpackData(text);}catch(e){}}
+  if(!obj){try{obj=JSON.parse(text);}catch(e){}}
+  if(!obj){toast("Не вдалося прочитати дані");return;}
+  if(applyTransfer(obj)){modal.style.display="none";toast("Готово — прогрес об'єднано");}
+  else toast("Формат не розпізнано");
+}
+// QR — підвантажуємо бібліотеку з CDN лише за потреби (онлайн); дані не передаються
+var _qrP=null;
+function loadQRLib(){if(_qrP)return _qrP;_qrP=new Promise((res,rej)=>{if(window.qrcode)return res(window.qrcode);const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';s.onload=()=>res(window.qrcode);s.onerror=rej;document.head.appendChild(s);});return _qrP;}
+function renderQR(box,text){
+  if(!box)return;
+  if(!text){box.innerHTML='';return;}
+  if(text.length>1800){box.innerHTML='<div style="font-size:12px;color:var(--muted)">📵 Даних забагато для QR — перенеси <b>посиланням</b> або <b>файлом</b> нижче.</div>';return;}
+  box.innerHTML='<div style="font-size:12px;color:var(--muted)">QR…</div>';
+  loadQRLib().then(qrcode=>{try{const qr=qrcode(0,'M');qr.addData(text);qr.make();box.innerHTML=qr.createImgTag(4,8);const img=box.querySelector('img');if(img){img.style.width='210px';img.style.height='210px';img.style.imageRendering='pixelated';img.style.border='6px solid #fff';img.style.borderRadius='8px';}}catch(e){box.innerHTML='<div style="font-size:12px;color:var(--muted)">Завелике для QR — скористайся посиланням/файлом.</div>';}}).catch(()=>{box.innerHTML='<div style="font-size:12px;color:var(--muted)">QR доступний лише онлайн — скористайся посиланням або файлом.</div>';});
+}
+function _resetModalUI(){const q=document.getElementById('modalQR');if(q)q.innerHTML='';['modalAction2','modalAction3'].forEach(id=>{const b=document.getElementById(id);if(b){b.style.display='none';b.onclick=null;}});}
+
+document.getElementById('export').onclick=async ()=>{
+  _resetModalUI();
+  document.getElementById('modalTitle').textContent="📲 Перенести на інший пристрій";
+  document.getElementById('modalHint').innerHTML="Найпростіше: на <b>іншому</b> пристрої наведи камеру на цей QR — відкриється застосунок і перенесе прогрес. Або надішли <b>посилання</b> чи <b>файл</b> через AirDrop. Дані йдуть лише між вашими пристроями.";
+  let url="";try{url=transferURL(await packData(buildTransferObj()));}catch(e){url="";}
+  modalText.value=JSON.stringify(buildTransferObj());
+  renderQR(document.getElementById('modalQR'),url);
+  const a=document.getElementById('modalAction');a.style.display="";a.textContent="🔗 Скопіювати посилання";a.onclick=()=>{if(url)copyToClip(url,"Посилання скопійовано — надішли на інший пристрій");else toast("Посилання недоступне — скористайся файлом");};
+  const a2=document.getElementById('modalAction2');a2.style.display="";a2.textContent="📥 Файл";a2.onclick=downloadTransfer;
+  const a3=document.getElementById('modalAction3');a3.style.display="";a3.textContent="📋 Текст";a3.onclick=()=>copyToClip(modalText.value,"Скопійовано — встав на іншому пристрої");
   modal.style.display="flex";
 };
 
 document.getElementById('import').onclick=()=>{
+  _resetModalUI();
   modalText.value="";
-  document.getElementById('modalTitle').textContent="Завантажити прогрес";
-  document.getElementById('modalHint').textContent="Встав сюди текст прогресу, який ти раніше зберіг, і натисни «Відновити». Якщо текст містить «Мої фрази» — вони теж відновляться.";
-  const act=document.getElementById('modalAction');
-  act.textContent="↻ Відновити";
-  act.onclick=()=>{
-    try{
-      const parsed=JSON.parse(modalText.value.trim());
-      if(parsed && parsed.progress){              // новий формат: прогрес + мої фрази (+ обране/налаштування)
-        writeStore(parsed.progress);
-        if(parsed.myphrases)writeMy(parsed.myphrases);
-        if(parsed.favorites){favs=new Set(parsed.favorites);saveFavs();}
-        if(parsed.settings){settings=Object.assign({},DEF_SETTINGS,parsed.settings);saveSettings();}
-      } else {                                     // старий формат: лише прогрес рівня
-        writeStore(parsed);
-      }
-      state=load();myStore=loadMy();ensureMyCards();
-      resetBrowse();updateStats();buildLessons();pickNext();
-      modal.style.display="none";toast("Прогрес відновлено");
-    }catch(err){ toast("Не вдалося прочитати текст"); }
-  };
+  document.getElementById('modalTitle').textContent="↻ Перенести прогрес сюди";
+  document.getElementById('modalHint').innerHTML="Три способи: <b>наведи камеру</b> на QR з іншого пристрою (відкриє застосунок сам) · <b>відкрий файл</b> · або встав <b>текст</b> і натисни «Відновити». Прогрес <b>об'єднається</b> — нічого не зникне.";
+  const a=document.getElementById('modalAction');a.style.display="";a.textContent="↻ Відновити з тексту";a.onclick=()=>importFromText(modalText.value);
+  const a2=document.getElementById('modalAction2');a2.style.display="";a2.textContent="📂 Відкрити файл";a2.onclick=()=>document.getElementById('modalFile').click();
   modal.style.display="flex";
 };
+(function(){const f=document.getElementById('modalFile');if(f)f.onchange=e=>{const file=e.target.files&&e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>importFromText(String(r.result||''));r.readAsText(file);e.target.value='';};})();
+// авто-імпорт зі сканованого посилання (?d=...)
+(function(){try{const sp=new URLSearchParams(location.search);const d=sp.get('d');if(!d)return;
+  setTimeout(async ()=>{try{const obj=await unpackData(d);if(obj&&confirm("Перенести збережений прогрес на цей пристрій? Він об'єднається з наявним."))applyTransfer(obj)&&toast("Готово — прогрес перенесено");}catch(e){toast("Посилання переносу пошкоджене");}
+    try{sp.delete('d');history.replaceState(null,'',location.pathname+(sp.toString()?'?'+sp.toString():'')+location.hash);}catch(e){}},500);
+}catch(e){}})();
 // кнопки модалки-редактора «Моєї фрази»
 (function(){
   var s=document.getElementById('pmSave'), c=document.getElementById('pmCancel');
