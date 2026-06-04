@@ -935,7 +935,7 @@ document.getElementById('import').onclick=()=>{
   }).catch(function(){btn.textContent='☁ (нема мережі)';});
 })();
 // 💬 Збір відгуків: кнопка → Google-форма (якщо задано FEEDBACK_URL), інакше готовий лист із контекстом
-const FEEDBACK_URL="https://forms.gle/up39hjDaohJPWuqi8";  // Google-форма відгуків (порожньо → кнопка слала б лист)
+const FEEDBACK_URL="https://forms.gle/up39hjDaohJPWuqi8";  // Google-форма відгуків (окремі файли slovencina); для движка langua patch-engine підставляє свою
 const FEEDBACK_EMAIL="wizartclub@gmail.com";
 (function(){
   var fb=document.getElementById('feedback'); if(!fb)return;
